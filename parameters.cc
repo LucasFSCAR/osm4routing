@@ -17,12 +17,15 @@
 
 #include "parse.h"
 #include <iostream>
+using namespace std;
+
 Edge_property::Edge_property() :
         car_direct(unknown),
         car_reverse(unknown),
         bike_direct(unknown),
         bike_reverse(unknown),
-        foot(unknown)
+        foot(unknown),
+        rail(unknown)
     {
     }
 
@@ -33,12 +36,12 @@ bool Edge_property::accessible()
 
 bool Edge_property::direct_accessible()
 {
-    return car_direct > 0 || bike_direct > 0 || foot > 0;
+    return car_direct > 0 || bike_direct > 0 || foot > 0 || rail > 0;
 }
 
 bool Edge_property::reverse_accessible()
 {
-    return car_reverse > 0 || bike_reverse > 0 || foot > 0;
+    return car_reverse > 0 || bike_reverse > 0 || foot > 0 || rail > 0;
 }
 
 
@@ -50,6 +53,7 @@ void Edge_property::reset()
     bike_direct = unknown;
     bike_reverse = unknown;
     foot = unknown;
+    rail = unknown;
 }
 
 void Edge_property::normalize()
@@ -63,6 +67,7 @@ void Edge_property::normalize()
     if(car_reverse == unknown) car_reverse = car_forbiden;
     if(bike_reverse == unknown) bike_reverse = bike_forbiden;
     if(foot == unknown) foot = foot_forbiden;
+    if(rail == unknown) rail = rail_forbiden;
 }
 
 bool Edge_property::update(const std::string & key, const std::string & val)
@@ -112,6 +117,7 @@ bool Edge_property::update(const std::string & key, const std::string & val)
             foot = foot_forbiden;
             bike_direct = bike_forbiden;
         }
+        rail = rail_forbiden;
     }
 
     else if(key == "pedestrian" || key == "foot")
@@ -122,6 +128,7 @@ bool Edge_property::update(const std::string & key, const std::string & val)
             foot = foot_forbiden;
         else
             std::cerr << "I don't know what to do with: " << key << "=" << val << std::endl;
+        rail = rail_forbiden;
     }
 
     // http://wiki.openstreetmap.org/wiki/Cycleway
@@ -144,6 +151,7 @@ bool Edge_property::update(const std::string & key, const std::string & val)
             bike_reverse = bike_lane;
         else
             bike_direct = bike_lane;
+        rail = rail_forbiden;
     }
 
     else if(key == "bicycle")
@@ -154,6 +162,7 @@ bool Edge_property::update(const std::string & key, const std::string & val)
             bike_direct = bike_forbiden;
         else
             std::cerr << "I don't know what to do with: " << key << "=" << val << std::endl;
+        rail = rail_forbiden;
     }
 
     else if(key == "busway")
@@ -164,6 +173,7 @@ bool Edge_property::update(const std::string & key, const std::string & val)
             bike_reverse = bike_busway;
         else
             bike_direct = bike_busway;
+        rail = rail_forbiden;
     }
 
     else if(key == "oneway")
@@ -174,6 +184,7 @@ bool Edge_property::update(const std::string & key, const std::string & val)
             if(bike_reverse == unknown)
                 bike_reverse = bike_forbiden;
         }
+        rail = rail_forbiden;
     }
 
     else if(key == "junction")
@@ -183,6 +194,15 @@ bool Edge_property::update(const std::string & key, const std::string & val)
             car_reverse = car_forbiden;
             if(bike_reverse == unknown)
                 bike_reverse = bike_forbiden;
+        }
+        rail = rail_forbiden;
+    }
+
+    else if(key == "railway")
+    {
+        if (val == "rail")
+        {
+            rail = is_rail;
         }
     }
     return this->accessible();

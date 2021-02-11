@@ -1,5 +1,6 @@
 from osm4routing_xml import *
 import os
+import io
 import bz2, gzip
 import sys
 from optparse import OptionParser
@@ -20,7 +21,7 @@ class Node(object):
             self.the_geom = wkt_geom
 
 class Edge(object):
-    def __init__(self, id, source, target, length, car, car_rev, bike, bike_rev, foot, the_geom, spatial=False):
+    def __init__(self, id, source, target, length, car, car_rev, bike, bike_rev, foot, rail, the_geom, spatial=False):
         wkt_geom = 'LINESTRING({0})'.format(the_geom)
         self.id = id
         self.source = source
@@ -31,6 +32,7 @@ class Edge(object):
         self.bike = bike
         self.bike_rev = bike
         self.foot = foot
+        self.rail = rail
         if spatial:
             self.the_geom = WKTSpatialElement(wkt_geom)
         else:
@@ -69,12 +71,12 @@ def parse(file, output="csv", edges_name="edges", nodes_name="nodes", spatial=Fa
             Column('bike', SmallInteger),
             Column('bike_rev', SmallInteger),
             Column('foot', SmallInteger),
+            Column('rail', SmallInteger),
             Column('the_geom', edge_geom)
             )
 
         GeometryDDL(nodes_table)
         GeometryDDL(edges_table)
-
 
         engine = create_engine(output)
         metadata.drop_all(engine)
@@ -98,16 +100,21 @@ def parse(file, output="csv", edges_name="edges", nodes_name="nodes", spatial=Fa
         filesize = os.path.getsize(file)
         f = open(file, 'r') 
 
-    buffer_size = 4096
+    buffer_size = 8192
     p = Parser()
     eof = False
-    print "Step 1: reading file {0}".format(file)
+    print "Step 001: reading file {0}".format(file)
+    print "Default buffer size: ",io.DEFAULT_BUFFER_SIZE
     read = 0
+    i = 0
     while not eof:
         s = f.read(buffer_size)
         eof = len(s) != buffer_size
         p.read(s, len(s), eof)
         read += len(s)
+        i = i + 1
+        if i % 10000 == 0: # Change this based on entrance size
+            print(i)
 
     print "  Read {0} nodes and {1} ways\n".format(p.get_osm_nodes(), p.get_osm_ways())
 
@@ -130,18 +137,19 @@ def parse(file, output="csv", edges_name="edges", nodes_name="nodes", spatial=Fa
         session.commit()
 
     print "  Wrote {0} nodes\n".format(count)
-
     print "Step 3: saving the edges"
     edges = p.get_edges()
+
     count = 0
     if output == "csv":
         e = open(edges_name + '.csv', 'w')
-        e.write('"edge_id","source","target","length","car","car reverse","bike","bike reverse","foot","WKT"\n')
+        e.write('"edge_id","source","target","length","car","car reverse","bike","bike reverse","foot","rail",WKT"\n')
+
     for edge in edges:
         if output == "csv":
-            e.write('{0},{1},{2},{3},{4},{5},{6},{7},{8},LINESTRING({9})\n'.format(edge.edge_id, edge.source, edge.target, edge.length, edge.car, edge.car_d, edge.bike, edge.bike_d, edge.foot, edge.geom))
+            e.write('{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},LINESTRING({9})\n'.format(edge.edge_id, edge.source, edge.target, edge.length, edge.car, edge.car_d, edge.bike, edge.bike_d, edge.foot, edge.rail, edge.geom))
         else:
-            session.add(Edge(edge.edge_id, edge.source, edge.target, edge.length, edge.car, edge.car_d, edge.bike, edge.bike_d, edge.foot, edge.geom, spatial=spatial))
+            session.add(Edge(edge.edge_id, edge.source, edge.target, edge.length, edge.car, edge.car_d, edge.bike, edge.bike_d, edge.foot, edge.rail, edge.geom, spatial=spatial))
         count += 1
     if output == "csv":
         e.close()

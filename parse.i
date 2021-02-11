@@ -16,6 +16,7 @@ class Edge_property
     int bike_direct;
     int bike_reverse;
     int foot;
+    int rail;
 
     Edge_property();
 
@@ -44,6 +45,7 @@ struct Edge
     char bike;
     char bike_d;
     char foot;
+    char rail;
     std::string geom;
 };
 

@@ -25,6 +25,9 @@ const int bike_lane = 3;
 const int bike_busway = 4;
 const int bike_track = 5;
 
+const int rail_forbiden = 0;
+const int is_rail = 1;
+
 class Edge_property
 {
     public:
@@ -33,6 +36,7 @@ class Edge_property
     int bike_direct;
     int bike_reverse;
     int foot;
+    int rail;
 
     Edge_property();
 
@@ -83,11 +87,12 @@ struct Edge
     char bike;
     char bike_d;
     char foot;
+    char rail;
     std::string geom;
     Edge() {}
-    Edge(node_t e, node_t s, node_t t, float l, char c, char cd, char b, char bd, char f, const std::string & str) :
+    Edge(node_t e, node_t s, node_t t, float l, char c, char cd, char b, char bd, char f, char r, const std::string & str) :
         edge_id(e), source(s), target(t), length(l),
-        car(c), car_d(cd), bike(b), bike_d(bd), foot(f),
+        car(c), car_d(cd), bike(b), bike_d(bd), foot(f), rail(r),
         geom(str)
     {}
 };

@@ -77,7 +77,7 @@ start(void * data, const char *el, const char **attr)
             d->current_way = atoll(value);
         }
         d->ways_count++;
-    }
+    } 
 
     else if(strcmp(el, "tag") == 0)
     {
@@ -87,8 +87,9 @@ start(void * data, const char *el, const char **attr)
             const char* name = *attr++;
             const char* value = *attr++;
 
-            if ( strcmp(name, "k") == 0 )
+            if ( strcmp(name, "k") == 0 ) {
                 key = value;
+            }
             else if ( strcmp(name, "v") == 0 )
             {
                 d->ep.update(key, value);
@@ -107,7 +108,8 @@ void end(void * data, const char * el)
         {
             d->ep.normalize();
             vector<node_t>::const_iterator it;
-            d->temp_edges << d->ep.foot << " "
+            d->temp_edges 
+                << d->ep.foot << " " << d->ep.rail << " "
                 << d->ep.car_direct << " " << d->ep.car_reverse << " "
                 << d->ep.bike_direct << " " << d->ep.bike_reverse << " "
                 << d->way_nodes.size();
@@ -117,7 +119,6 @@ void end(void * data, const char * el)
                 d->temp_edges << " " << *it;
             }
             d->temp_edges << endl;
-
             d->nodes[d->way_nodes.front()].uses++;
             d->nodes[d->way_nodes.back()].uses++;
         }
@@ -156,7 +157,8 @@ vector<Node> Parser::get_nodes() const
     ret.reserve(nodes.size()/5); //Simply heuristical...
     for(NodeMapType::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
-        if( (*i).second.uses > 1 )
+        int getEveryLine = 0; // 0 = yes; 1 = no (only first and last);
+        if( (*i).second.uses > getEveryLine )
         {
             ret.push_back(Node((*i).second.lon, (*i).second.lat, (*i).first));
         }
@@ -175,7 +177,7 @@ vector<Edge> Parser::get_edges() const
     stringstream geom;
     geom.precision(10);
     double length = 0, pred_lon = 0, pred_lat = 0;
-    char car_direct, car_rev, foot, bike_direct, bike_rev;
+    char car_direct, car_rev, foot, bike_direct, bike_rev, rail;
     int nb;
     int edges_inserted = 0;
     Node n;
@@ -185,14 +187,24 @@ vector<Edge> Parser::get_edges() const
     while(getline(tmp, line))
     {
         stringstream way(line);
-        way >> foot >> car_direct >> car_rev >> bike_direct >> bike_rev >> nb;
+        // cout << line << "\n";
+        way >> foot >> rail >> car_direct >> car_rev >> bike_direct >> bike_rev >> nb;
         bool first_node = true;
+        // cout << "";
+        // cout << "foot : " << foot << '\n';
+        // cout << "rail : " << rail << '\n';
+        // cout << "car_d: " << car_direct << '\n';
+        // cout << "car_r: " << car_rev << '\n';
+        // cout << "bikeD: " << bike_direct << '\n';
+        // cout << "bikeR: " << bike_rev << '\n';
+        // cout << "nb   : " << nb << "\n\n\n";
 
         // We skip the edge if there is an invalid node
         bool skip_edge = false;
         for(int i=0; i<nb; i++)
         {
             way >> id;
+
             n = nodes.at(id);
 
             if(n.valid)
@@ -214,11 +226,12 @@ vector<Edge> Parser::get_edges() const
                 pred_lat = n.lat;
 
                 geom << n.lon << " " << n.lat;
-                if( !first_node && n.uses > 1 && id != source)
+                int getEveryLine = 0; // 0 = yes; 1 = no (only first and last);
+                if( !first_node && n.uses > getEveryLine && id != source)
                 {
                     if(!skip_edge)
                     {
-                      ret.push_back(Edge(edges_inserted, source, id, length, car_direct, car_rev, bike_direct, bike_rev, foot, geom.str()));
+                      ret.push_back(Edge(edges_inserted, source, id, length, car_direct, car_rev, bike_direct, bike_rev, foot, rail, geom.str()));
                     }
 
                     edges_inserted++;
